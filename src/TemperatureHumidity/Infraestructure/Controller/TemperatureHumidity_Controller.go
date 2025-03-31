@@ -3,56 +3,86 @@ package controller
 import (
 	application "DataConsumer/src/TemperatureHumidity/Application"
 	entities "DataConsumer/src/TemperatureHumidity/Domain/Entities"
+	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/gorilla/websocket"
 )
 
 type TemperatureHumidityController struct {
-	service *application.TemperatureHumidityService
+	service  *application.TemperatureHumidityService
+	upgrader websocket.Upgrader
 }
 
-// Constructor del controlador
+// NewTemperatureHumidityController crea una nueva instancia del controlador
 func NewTemperatureHumidityController(service *application.TemperatureHumidityService) *TemperatureHumidityController {
 	return &TemperatureHumidityController{
 		service: service,
+		upgrader: websocket.Upgrader{
+			CheckOrigin: func(r *http.Request) bool {
+				// Permite todas las conexiones (ajusta esto en producción)
+				return true
+			},
+		},
 	}
 }
-// Método para manejar la solicitud HTTP POST para guardar los datos del sensor
+
+// SaveTemperatureHumidityData maneja el POST para guardar datos del sensor
 func (c *TemperatureHumidityController) SaveTemperatureHumidityData(ctx *gin.Context) {
 	var sensor entities.TemperatureHumiditySensor
 
-	// Decodificar el cuerpo de la solicitud JSON
 	if err := ctx.ShouldBindJSON(&sensor); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Error al decodificar los datos"})
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"error": "Datos inválidos: " + err.Error(),
+		})
 		return
 	}
 
-	// Llamar al servicio para guardar los datos
 	if err := c.service.SaveTemperatureHumidityData(&sensor); err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Error al guardar los datos en la base de datos"})
+		log.Printf("Error al guardar datos: %v", err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"error": "No se pudieron guardar los datos",
+		})
 		return
 	}
 
-	// Responder con éxito
-	ctx.JSON(http.StatusCreated, gin.H{"message": "Datos guardados correctamente"})
+	ctx.JSON(http.StatusCreated, gin.H{
+		"message": "Datos registrados exitosamente",
+		"data":    sensor,
+	})
 }
 
-// Método para manejar la solicitud HTTP GET para obtener todos los datos
+// GetTemperatureHumidityData maneja el GET para obtener todos los registros
 func (c *TemperatureHumidityController) GetTemperatureHumidityData(ctx *gin.Context) {
-	// Llamar al servicio para obtener los datos
 	data, err := c.service.GetTemperatureHumidityData()
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Error al obtener los datos"})
+		log.Printf("Error al obtener datos: %v", err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"error": "No se pudieron recuperar los datos",
+		})
 		return
 	}
 
-	// Responder con los datos en formato JSON
-	ctx.JSON(http.StatusOK, data)
+	ctx.JSON(http.StatusOK, gin.H{
+		"count":   len(data),
+		"results": data,
+	})
 }
 
-// Método para manejar las conexiones WebSocket
+// HandleWebSocketConnection maneja conexiones WebSocket para actualizaciones en tiempo real
 func (c *TemperatureHumidityController) HandleWebSocketConnection(ctx *gin.Context) {
-	// Aquí puedes mantener la implementación de WebSocket, adaptada para este contexto
-	// Nota: Para WebSocket necesitarás adaptarlo también al contexto de Gin
+	conn, err := c.upgrader.Upgrade(ctx.Writer, ctx.Request, nil)
+	if err != nil {
+		log.Printf("Error al establecer WebSocket: %v", err)
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"error": "No se pudo iniciar la conexión WebSocket",
+		})
+		return
+	}
+
+	// Registra la conexión en el servicio
+	c.service.HandleWebSocketConnection(conn)
+
+	// Nota: La desconexión se maneja automáticamente en el servicio
 }

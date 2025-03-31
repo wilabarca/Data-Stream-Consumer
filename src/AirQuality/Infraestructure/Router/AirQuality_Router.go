@@ -16,7 +16,7 @@ func RegisterAirQualitySensorRoutes(router *gin.Engine, airQualitySensorControll
         // Crear nuevos datos
         airQualitySensorGroup.POST("/", airQualitySensorController.SaveAirQualityData)
 
-        // Ruta para WebSocket
+        // Ruta para WebSocket (para mostrar los datos en tiempo real)
         airQualitySensorGroup.GET("/ws", airQualitySensorController.HandleWebSocketConnection)
     }
 }

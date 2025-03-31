@@ -15,13 +15,9 @@ func RegisterTemperatureHumidityRoutes(router *gin.Engine, temperatureHumidityCo
 		// Crear un nuevo sensor de temperatura y humedad
 		temperatureHumidityGroup.POST("/", temperatureHumidityController.SaveTemperatureHumidityData)
 
-		// Ruta para WebSocket (si es necesario)
+		// Ruta para WebSocket (para mostrar los datos en tiempo real)
 		temperatureHumidityGroup.GET("/ws", temperatureHumidityController.HandleWebSocketConnection)
 
-		// No es necesario actualizar los datos de un sensor específico, pero si lo necesitaras:
-		// temperatureHumidityGroup.PUT("/:sensor_id", temperatureHumidityController.UpdateTemperatureHumiditySensorData)
-
-		// Eliminar un sensor de temperatura y humedad por su ID (si es necesario)
-		// temperatureHumidityGroup.DELETE("/:sensor_id", temperatureHumidityController.DeleteTemperatureHumiditySensorData)
+		
 	}
 }

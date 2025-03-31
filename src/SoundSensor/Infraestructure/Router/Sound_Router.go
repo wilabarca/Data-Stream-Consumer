@@ -16,13 +16,9 @@ func RegisterSoundSensorRoutes(router *gin.Engine, soundSensorController *contro
 		// Crear un nuevo sensor de sonido
 		soundSensorGroup.POST("/", soundSensorController.SaveSoundData)
 
-		// Ruta para WebSocket (si es necesario)
+		// Ruta para WebSocket (para mostrar los datos en tiempo real)
 		soundSensorGroup.GET("/ws", soundSensorController.HandleWebSocket)
 
-		// No es necesario actualizar los datos de un sensor específico, pero si lo necesitaras:
-		// soundSensorGroup.PUT("/:sensor_id", soundSensorController.UpdateSoundSensorData)
-
-		// Eliminar un sensor de sonido por su ID (si es necesario)
-		// soundSensorGroup.DELETE("/:sensor_id", soundSensorController.DeleteSoundSensorData)
+		
 	}
 }

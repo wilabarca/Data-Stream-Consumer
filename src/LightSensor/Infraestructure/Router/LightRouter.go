@@ -15,13 +15,9 @@ func RegisterLightSensorRoutes(router *gin.Engine, lightSensorController *contro
 		// Crear un nuevo sensor de luz
 		lightSensorGroup.POST("/", lightSensorController.SaveLightData)
 
-		// Ruta para WebSocket
+	   // Ruta para WebSocket (para mostrar los datos en tiempo real)
 		lightSensorGroup.GET("/ws", lightSensorController.HandleWebSocket)
 
-		// No es necesario actualizar los datos de un sensor específico, pero si lo necesitaras:
-		// lightSensorGroup.PUT("/:sensor_id", lightSensorController.UpdateLightSensorData)
-
-		// Eliminar un sensor de luz por su ID
-		// lightSensorGroup.DELETE("/:sensor_id", lightSensorController.DeleteLightSensorData)
+		
 	}
 }

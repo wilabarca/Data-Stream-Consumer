@@ -49,6 +49,14 @@ func main() {
 	temperatureService := temperatureapp.NewTemperatureHumidityService(temperatureRepo)
 	soundService := soundapp.NewSoundService(soundRepo)
 
+    // lienas para que funcione el websocket
+	go airQualityService.StartBroadcasting()
+    go lightService.StartBroadcasting()
+    go temperatureService.StartBroadcasting()
+    go soundService.StartBroadcasting()
+	
+
+
 	// Creación de controladores
 	airQualityCtrl := airqualitycontroller.NewAirQualityController(airQualityService)
 	lightCtrl := lightcontroller.NewLightController(lightService)
