@@ -1,105 +1,91 @@
 package application
 
 import (
+	entities "DataConsumer/src/SoundSensor/Domain/Entities"
+	repositories "DataConsumer/src/SoundSensor/Domain/Repositories"
 	"encoding/json"
-	"DataConsumer/src/SoundSensor/Domain/Entities"
-	"DataConsumer/src/SoundSensor/Domain/Repositories"
-	"github.com/gorilla/websocket"
+	"errors"
 	"log"
 	"sync"
+
+	"github.com/gorilla/websocket"
 )
 
-// WebSocketHub maneja todas las conexiones WebSocket activas.
-type WebSocketHub struct {
-	clients map[*websocket.Conn]bool
-	mu      sync.Mutex
+type SoundService struct {
+	repo      repositories.SoundSensor
+	clients   map[*websocket.Conn]bool
+	broadcast chan *entities.SoundSensor
+	mu        sync.Mutex
 }
 
-// SoundSensorService es la estructura que contiene el repositorio de sensores de sonido
-type SoundSensorService struct {
-	repository   repositories.SoundSensor
-	websocketHub *WebSocketHub
+func (s *SoundService) RemoveClient(conn *websocket.Conn) {
+	panic("unimplemented")
 }
 
-// NewSoundSensorService es el constructor para el servicio de sensores de sonido
-func NewSoundSensorService(repository repositories.SoundSensor, websocketHub *WebSocketHub) *SoundSensorService {
-	return &SoundSensorService{
-		repository:   repository,
-		websocketHub: websocketHub,
+func (s *SoundService) AddClient(conn *websocket.Conn) {
+	panic("unimplemented")
+}
+
+func NewSoundService(repo repositories.SoundSensor) *SoundService {
+	return &SoundService{
+		repo:      repo,
+		clients:   make(map[*websocket.Conn]bool),
+		broadcast: make(chan *entities.SoundSensor),
 	}
 }
 
-// SaveSoundData guarda los datos de un sensor de sonido en la base de datos y envía los datos por WebSocket
-func (s *SoundSensorService) SaveSoundData(sensor *entities.SoundSensor) error {
-	// Guardar los datos del sensor en la base de datos
-	err := s.repository.SaveSoundData(sensor)
-	if err != nil {
+func (s *SoundService) SaveSoundData(sensor *entities.SoundSensor) error {
+	if sensor == nil {
+		return errors.New("los datos del sensor de sonido son nulos")
+	}
+
+	if err := s.repo.SaveSoundData(sensor); err != nil {
 		return err
 	}
 
-	// Enviar los datos al frontend a través de WebSocket
-	err = s.sendDataToWebSocket(sensor)
-	if err != nil {
-		log.Println("Error al enviar los datos por WebSocket:", err)
-		return err
-	}
-
+	s.broadcast <- sensor
 	return nil
 }
 
-// GetAllSoundData obtiene todos los datos de los sensores de sonido desde la base de datos
-func (s *SoundSensorService) GetAllSoundData() ([]*entities.SoundSensor, error) {
-	// Llamar al repositorio para obtener todos los datos
-	soundSensors, err := s.repository.GetSoundData()
-	if err != nil {
-		return nil, err
-	}
+func (s *SoundService) GetSoundData() ([]*entities.SoundSensor, error) {
+	return s.repo.GetSoundData()
+}
 
-	// Enviar los datos al frontend a través de WebSocket
-	for _, sensor := range soundSensors {
-		err := s.sendDataToWebSocket(sensor)
-		if err != nil {
-			log.Println("Error al enviar los datos por WebSocket:", err)
-			return nil, err
+func (s *SoundService) HandleWebSocketConnection(conn *websocket.Conn) {
+	s.mu.Lock()
+	s.clients[conn] = true
+	s.mu.Unlock()
+
+	defer func() {
+		s.mu.Lock()
+		delete(s.clients, conn)
+		s.mu.Unlock()
+		conn.Close()
+	}()
+
+	for {
+		if _, _, err := conn.ReadMessage(); err != nil {
+			break
 		}
 	}
-
-	return soundSensors, nil
 }
 
-// sendDataToWebSocket envía los datos del sensor a través de WebSocket al cliente
-func (s *SoundSensorService) sendDataToWebSocket(sensor *entities.SoundSensor) error {
-	// Convertir el objeto del sensor a JSON
-	message, err := json.Marshal(sensor)
-	if err != nil {
-		return err
-	}
-
-	// Enviar el mensaje a todos los clientes conectados
-	s.websocketHub.mu.Lock()
-	defer s.websocketHub.mu.Unlock()
-	for client := range s.websocketHub.clients {
-		err := client.WriteMessage(websocket.TextMessage, message)
+func (s *SoundService) StartBroadcasting() {
+	for sensorData := range s.broadcast {
+		message, err := json.Marshal(sensorData)
 		if err != nil {
-			log.Println("Error al enviar mensaje WebSocket:", err)
-			client.Close()
-			delete(s.websocketHub.clients, client)
+			log.Println("Error al serializar datos:", err)
+			continue
 		}
+
+		s.mu.Lock()
+		for client := range s.clients {
+			if err := client.WriteMessage(websocket.TextMessage, message); err != nil {
+				log.Println("Error al enviar mensaje:", err)
+				client.Close()
+				delete(s.clients, client)
+			}
+		}
+		s.mu.Unlock()
 	}
-
-	return nil
-}
-
-// AddClient agrega un cliente al WebSocketHub
-func (s *SoundSensorService) AddClient(client *websocket.Conn) {
-	s.websocketHub.mu.Lock()
-	defer s.websocketHub.mu.Unlock()
-	s.websocketHub.clients[client] = true
-}
-
-// RemoveClient elimina un cliente del WebSocketHub
-func (s *SoundSensorService) RemoveClient(client *websocket.Conn) {
-	s.websocketHub.mu.Lock()
-	defer s.websocketHub.mu.Unlock()
-	delete(s.websocketHub.clients, client)
 }

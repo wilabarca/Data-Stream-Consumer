@@ -1,60 +1,62 @@
 package database
 
 import (
+	"database/sql"
 	entities "DataConsumer/src/LightSensor/Domain/Entities"
 	repositories "DataConsumer/src/LightSensor/Domain/Repositories"
-	"database/sql"
 )
 
-type MySQLSensorRepository struct {
+type MySQLLightRepository struct {
 	db *sql.DB
 }
 
-func NewMySQLSensorRepository(db *sql.DB) repositories.LightRepository {
-	return &MySQLSensorRepository{db: db}
-	
+func NewLightRepository(db *sql.DB) repositories.LightRepository {
+	return &MySQLLightRepository{db: db}
 }
 
-// SaveLightData guarda los datos del sensor de luz en la base de datos.
-func (m *MySQLSensorRepository) SaveLightData(light *entities.LightSensor) error {
-	_, err := m.db.Exec("INSERT INTO light_sensors (sensor_id, intensidad, color, estado, timestamp) VALUES (?, ?, ?, ?, ?)", 
-		light.SensorID, light.Intensidad, light.Color, light.Estado, light.Timestamp)
+func (m *MySQLLightRepository) SaveLightData(light *entities.LightSensor) error {
+	_, err := m.db.Exec(
+		"INSERT INTO light_sensors (sensor_id, intensidad, color, estado, timestamp) VALUES (?, ?, ?, ?, ?)",
+		light.SensorID, light.Intensidad, light.Color, light.Estado, light.Timestamp,
+	)
 	return err
 }
-// GetLightData obtiene todos los datos de los sensores de luz desde la base de datos.
-func (m *MySQLSensorRepository) GetLightData() ([]*entities.LightSensor, error) {
+
+func (m *MySQLLightRepository) GetLightData() ([]*entities.LightSensor, error) {
 	rows, err := m.db.Query("SELECT id, sensor_id, intensidad, color, estado, timestamp FROM light_sensors")
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	var lightSensors []*entities.LightSensor
+	var lights []*entities.LightSensor
 	for rows.Next() {
 		var light entities.LightSensor
 		if err := rows.Scan(&light.ID, &light.SensorID, &light.Intensidad, &light.Color, &light.Estado, &light.Timestamp); err != nil {
 			return nil, err
 		}
-		lightSensors = append(lightSensors, &light)
+		lights = append(lights, &light)
 	}
-	return lightSensors, nil
+	return lights, nil
 }
 
-// GetLightDataBySensorID obtiene los datos de los sensores de luz por su sensor_id.
-func (m *MySQLSensorRepository) GetLightDataBySensorID(sensorID string) ([]*entities.LightSensor, error) {
-	rows, err := m.db.Query("SELECT id, sensor_id, intensidad, color, estado, timestamp FROM light_sensors WHERE sensor_id = ?", sensorID)
+func (m *MySQLLightRepository) GetLightDataBySensorID(sensorID string) ([]*entities.LightSensor, error) {
+	rows, err := m.db.Query(
+		"SELECT id, sensor_id, intensidad, color, estado, timestamp FROM light_sensors WHERE sensor_id = ?",
+		sensorID,
+	)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	var lightSensors []*entities.LightSensor
+	var lights []*entities.LightSensor
 	for rows.Next() {
 		var light entities.LightSensor
 		if err := rows.Scan(&light.ID, &light.SensorID, &light.Intensidad, &light.Color, &light.Estado, &light.Timestamp); err != nil {
 			return nil, err
 		}
-		lightSensors = append(lightSensors, &light)
+		lights = append(lights, &light)
 	}
-	return lightSensors, nil
+	return lights, nil
 }

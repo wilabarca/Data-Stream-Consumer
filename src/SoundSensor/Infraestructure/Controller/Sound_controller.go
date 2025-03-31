@@ -12,12 +12,12 @@ import (
 
 // SoundSensorController es el controlador que maneja las peticiones relacionadas con los sensores de sonido
 type SoundSensorController struct {
-	service *application.SoundSensorService
+	service *application.SoundService
 	upgrader websocket.Upgrader
 }
 
 // NewSoundSensorController es el constructor para el controlador de los sensores de sonido
-func NewSoundSensorController(service *application.SoundSensorService) *SoundSensorController {
+func NewSoundSensorController(service *application.SoundService) *SoundSensorController {
 	return &SoundSensorController{
 		service: service,
 		upgrader: websocket.Upgrader{
@@ -49,7 +49,7 @@ func (c *SoundSensorController) SaveSoundData(ctx *gin.Context) {
 // GetSoundData obtiene todos los datos del sensor de sonido
 func (c *SoundSensorController) GetSoundData(ctx *gin.Context) {
 	// Llamar al servicio para obtener los datos
-	sensors, err := c.service.GetAllSoundData()
+	sensors, err := c.service.GetSoundData()
 	if err != nil {
 		log.Println("Error getting sound sensor data:", err)
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "Error getting sound sensor data"})
