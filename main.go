@@ -3,6 +3,7 @@ package main
 import (
 	core "DataConsumer/Core"
 	"log"
+	"time"
 
 	airqualityrouter "DataConsumer/src/AirQuality/Infraestructure/Router"
 	lightrouter "DataConsumer/src/LightSensor/Infraestructure/Router"
@@ -25,6 +26,7 @@ import (
 	sounddb "DataConsumer/src/SoundSensor/Infraestructure/Database"
 	tempdb "DataConsumer/src/TemperatureHumidity/Infraestructure/Database"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 )
 
@@ -37,7 +39,17 @@ func main() {
 
 	router := gin.Default()
 
-	// Inicialización de repositorios con las implementaciones concretas
+	// Configuración CORS
+	router.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{"*"}, // Permite todos los orígenes del fronted
+		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"},
+		AllowHeaders:     []string{"Origin", "Content-Length", "Content-Type", "Authorization"},
+		ExposeHeaders:    []string{"Content-Length"},
+		AllowCredentials: true,
+		MaxAge:           12 * time.Hour,
+	}))
+
+	// Inicialización de repositorios
 	airQualityRepo := airqualitydb.NewAirQualityRepository(db)
 	lightRepo := lightdb.NewLightRepository(db)
 	temperatureRepo := tempdb.NewTemperatureHumidityRepository(db)
@@ -49,13 +61,11 @@ func main() {
 	temperatureService := temperatureapp.NewTemperatureHumidityService(temperatureRepo)
 	soundService := soundapp.NewSoundService(soundRepo)
 
-    // lienas para que funcione el websocket
+	// Inicio de broadcasters WebSocket para que funcione y muestre todos los datos en tiempo real 
 	go airQualityService.StartBroadcasting()
-    go lightService.StartBroadcasting()
-    go temperatureService.StartBroadcasting()
-    go soundService.StartBroadcasting()
-	
-
+	go lightService.StartBroadcasting()
+	go temperatureService.StartBroadcasting()
+	go soundService.StartBroadcasting()
 
 	// Creación de controladores
 	airQualityCtrl := airqualitycontroller.NewAirQualityController(airQualityService)
