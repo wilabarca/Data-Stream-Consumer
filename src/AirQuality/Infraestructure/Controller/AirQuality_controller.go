@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/gorilla/websocket"
 )
 
 type AirQualityController struct {
@@ -52,8 +53,15 @@ func (c *AirQualityController) GetAirQualityData(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, data)
 }
 
-// Método para manejar las conexiones WebSocket
+// Método para manejar las conexiones WebSocket// Método para manejar las conexiones WebSocket
 func (c *AirQualityController) HandleWebSocketConnection(ctx *gin.Context) {
-	// (Mantén tu implementación actual de WebSocket aquí)
-	// Nota: Para WebSocket necesitarás adaptarlo también al contexto de Gin
+	// Actualizar el encabezado para permitir la conexión WebSocket
+	conn, err := websocket.Upgrade(ctx.Writer, ctx.Request, nil, 1024, 1024)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Error al establecer la conexión WebSocket"})
+		return
+	}
+
+	// Registrar la conexión WebSocket con el servicio
+	c.service.HandleWebSocketConnection(conn)
 }
