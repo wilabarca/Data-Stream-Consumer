@@ -15,20 +15,17 @@ type TemperatureHumidityController struct {
 	upgrader websocket.Upgrader
 }
 
-// NewTemperatureHumidityController crea una nueva instancia del controlador
 func NewTemperatureHumidityController(service *application.TemperatureHumidityService) *TemperatureHumidityController {
 	return &TemperatureHumidityController{
 		service: service,
 		upgrader: websocket.Upgrader{
 			CheckOrigin: func(r *http.Request) bool {
-				// Permite todas las conexiones (ajusta esto en producción)
 				return true
 			},
 		},
 	}
 }
 
-// SaveTemperatureHumidityData maneja el POST para guardar datos del sensor
 func (c *TemperatureHumidityController) SaveTemperatureHumidityData(ctx *gin.Context) {
 	var sensor entities.TemperatureHumiditySensor
 
@@ -53,7 +50,6 @@ func (c *TemperatureHumidityController) SaveTemperatureHumidityData(ctx *gin.Con
 	})
 }
 
-// GetTemperatureHumidityData maneja el GET para obtener todos los registros
 func (c *TemperatureHumidityController) GetTemperatureHumidityData(ctx *gin.Context) {
 	data, err := c.service.GetTemperatureHumidityData()
 	if err != nil {
@@ -70,7 +66,6 @@ func (c *TemperatureHumidityController) GetTemperatureHumidityData(ctx *gin.Cont
 	})
 }
 
-// HandleWebSocketConnection maneja conexiones WebSocket para actualizaciones en tiempo real
 func (c *TemperatureHumidityController) HandleWebSocketConnection(ctx *gin.Context) {
 	conn, err := c.upgrader.Upgrade(ctx.Writer, ctx.Request, nil)
 	if err != nil {
@@ -81,8 +76,6 @@ func (c *TemperatureHumidityController) HandleWebSocketConnection(ctx *gin.Conte
 		return
 	}
 
-	// Registra la conexión en el servicio
 	c.service.HandleWebSocketConnection(conn)
 
-	// Nota: La desconexión se maneja automáticamente en el servicio
 }

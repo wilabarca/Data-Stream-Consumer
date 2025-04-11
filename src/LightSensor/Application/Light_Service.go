@@ -41,17 +41,6 @@ func (s *LightService) GetLightData() ([]*entities.LightSensor, error) {
 	return s.repo.GetLightData()
 }
 
-// 🔨 Corregido para devolver una lista de LightSensor
-func (s *LightService) GetLightDataBySensorID(sensorID string) ([]*entities.LightSensor, error) {
-	data, err := s.repo.GetLightDataBySensorID(sensorID)
-	if err != nil {
-		return nil, err
-	}
-	if len(data) == 0 {
-		return nil, errors.New("no data found for the given sensor ID")
-	}
-	return data, nil
-}
 
 func (s *LightService) HandleWebSocketConnection(conn *websocket.Conn) {
 	s.mu.Lock()

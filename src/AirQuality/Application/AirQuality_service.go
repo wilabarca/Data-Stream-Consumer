@@ -4,6 +4,7 @@ import (
 	entities "DataConsumer/src/AirQuality/Domain/Entities"
 	repositories "DataConsumer/src/AirQuality/Domain/Repositories"
 	"errors"
+	"log"
 	"sync"
 
 	"github.com/gorilla/websocket"
@@ -30,8 +31,10 @@ func (s *AirQualityService) SaveAirQualityData(sensor *entities.AirQualitySensor
 	}
 
 	if err := s.repo.SaveAirQualityData(sensor); err != nil {
+		log.Printf("Error al guardar los datos de calidad del aire: %v", err)
 		return err
 	}
+	
 
 	s.broadcast <- sensor
 	return nil

@@ -1,9 +1,8 @@
 package entities
 
 type TemperatureHumiditySensor struct {
-	ID          int     `json:"id"`
 	SensorID    string  `json:"sensor_id"`
-	Temperatura float64 `json:"temperatura"`
-	Humedad     float64 `json:"humedad"`
+	Temperature float64 `json:"temperature"`
+	Humidity    float64 `json:"humidity"`
 	Timestamp   string  `json:"timestamp"`
 }

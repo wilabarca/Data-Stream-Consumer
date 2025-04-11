@@ -20,7 +20,6 @@ import (
 	soundapp "DataConsumer/src/SoundSensor/Application"
 	temperatureapp "DataConsumer/src/TemperatureHumidity/Application"
 
-	// Importaciones de los paquetes de database
 	airqualitydb "DataConsumer/src/AirQuality/Infraestructure/Database"
 	lightdb "DataConsumer/src/LightSensor/Infraestructure/Database"
 	sounddb "DataConsumer/src/SoundSensor/Infraestructure/Database"
@@ -39,9 +38,8 @@ func main() {
 
 	router := gin.Default()
 
-	// Configuración CORS
 	router.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"*"}, // Permite todos los orígenes del fronted
+		AllowOrigins:     []string{"*"}, 
 		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Length", "Content-Type", "Authorization"},
 		ExposeHeaders:    []string{"Content-Length"},
@@ -49,39 +47,33 @@ func main() {
 		MaxAge:           12 * time.Hour,
 	}))
 
-	// Inicialización de repositorios
 	airQualityRepo := airqualitydb.NewAirQualityRepository(db)
 	lightRepo := lightdb.NewLightRepository(db)
 	temperatureRepo := tempdb.NewTemperatureHumidityRepository(db)
 	soundRepo := sounddb.NewSoundRepository(db)
 
-	// Creación de servicios
 	airQualityService := airqualityapp.NewAirQualityService(airQualityRepo)
 	lightService := lightapp.NewLightService(lightRepo)
 	temperatureService := temperatureapp.NewTemperatureHumidityService(temperatureRepo)
 	soundService := soundapp.NewSoundService(soundRepo)
 
-	// Inicio de broadcasters WebSocket para que funcione y muestre todos los datos en tiempo real 
 	go airQualityService.StartBroadcasting()
 	go lightService.StartBroadcasting()
 	go temperatureService.StartBroadcasting()
 	go soundService.StartBroadcasting()
 
-	// Creación de controladores
 	airQualityCtrl := airqualitycontroller.NewAirQualityController(airQualityService)
 	lightCtrl := lightcontroller.NewLightController(lightService)
 	temperatureCtrl := temperaturecontroller.NewTemperatureHumidityController(temperatureService)
 	soundCtrl := soundcontroller.NewSoundSensorController(soundService)
 
-	// Registro de rutas
 	airqualityrouter.RegisterAirQualitySensorRoutes(router, airQualityCtrl)
 	lightrouter.RegisterLightSensorRoutes(router, lightCtrl)
 	temphumidityrouter.RegisterTemperatureHumidityRoutes(router, temperatureCtrl)
 	soundrouter.RegisterSoundSensorRoutes(router, soundCtrl)
 
-	// Iniciar servidor
-	log.Println("Starting server on :8080")
-	if err := router.Run(":8080"); err != nil {
+	log.Println("Starting server on :8082")
+	if err := router.Run(":8082"); err != nil {
 		log.Fatalf("Failed to start server: %v", err)
 	}
 }

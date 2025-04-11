@@ -1,9 +1,11 @@
 package database
 
 import (
-	"database/sql"
 	entities "DataConsumer/src/TemperatureHumidity/Domain/Entities"
 	repositories "DataConsumer/src/TemperatureHumidity/Domain/Repositories"
+	"database/sql"
+	"fmt"
+	"time"
 )
 
 type MySQLTemperatureHumidityRepository struct {
@@ -15,15 +17,20 @@ func NewTemperatureHumidityRepository(db *sql.DB) repositories.TemperatureHumidi
 }
 
 func (m *MySQLTemperatureHumidityRepository) SaveTemperatureHumidityData(sensor *entities.TemperatureHumiditySensor) error {
-	_, err := m.db.Exec(
-		"INSERT INTO temperature_humidity_sensors (sensor_id, temperatura, humedad, timestamp) VALUES (?, ?, ?, ?)",
-		sensor.SensorID, sensor.Temperatura, sensor.Humedad, sensor.Timestamp,
+	parsedTime, err := time.Parse(time.RFC3339, sensor.Timestamp)
+	if err != nil {
+		return fmt.Errorf("error al parsear el timestamp: %v", err)
+	}
+	mysqlFormattedTime := parsedTime.Format("2006-01-02 15:04:05")
+
+	_, err = m.db.Exec(
+		"INSERT INTO TemperatureHumidity (SensorID, Temperature, Humidity, Timestamp) VALUES (?, ?, ?, ?)",
+		sensor.SensorID, sensor.Temperature, sensor.Humidity, mysqlFormattedTime,
 	)
 	return err
 }
-
 func (m *MySQLTemperatureHumidityRepository) GetTemperatureHumidityData() ([]*entities.TemperatureHumiditySensor, error) {
-	rows, err := m.db.Query("SELECT id, sensor_id, temperatura, humedad, timestamp FROM temperature_humidity_sensors")
+	rows, err := m.db.Query("SELECT sensorID, temperature, humidity, timestamp FROM temperature_humidity")
 	if err != nil {
 		return nil, err
 	}
@@ -32,7 +39,7 @@ func (m *MySQLTemperatureHumidityRepository) GetTemperatureHumidityData() ([]*en
 	var sensors []*entities.TemperatureHumiditySensor
 	for rows.Next() {
 		var sensor entities.TemperatureHumiditySensor
-		if err := rows.Scan(&sensor.ID, &sensor.SensorID, &sensor.Temperatura, &sensor.Humedad, &sensor.Timestamp); err != nil {
+		if err := rows.Scan(&sensor.SensorID, &sensor.Temperature, &sensor.Humidity, &sensor.Timestamp); err != nil {
 			return nil, err
 		}
 		sensors = append(sensors, &sensor)
